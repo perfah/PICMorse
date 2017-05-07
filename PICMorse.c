@@ -1,24 +1,10 @@
 /* project.c                  */
 /* PIC16F690 compiled with B. Knudsen Cc5x Free, not ANSI-C */
 
-/*
-   Use "PICkit2 UART Tool" as a 9600 Baud terminal.
-   Uncheck "Echo On".
-   PIC internal UART is not used.
-*/
-
 #include "16F690.h"
 #include "int16Cxx.h"
 #pragma config |= 0x00D4
 #pragma char X @ 0x115
-
-#define SPACING_LENGTH 100
-typedef enum
-{
-	DOT = 50,
-	DASH = 150,
-	_ = 0
-} BeepLength;
 
 void delay( char);
 void init_io_ports( void );
@@ -26,8 +12,6 @@ void init_serial( void );
 void init_interrupt( void );
 void putchar( char);
 void printf(const char *string, char variable);
-char getchar_eedata( char adress );
-void putchar_eedata( char data, char adress );
 
 bit receiver_flag;   /* Signal-flag used by interrupt routine   */
 char receiver_byte;  /* Transfer Byte used by interrupt routine */
@@ -61,102 +45,120 @@ interrupt int_server( void ) /* the place for the interrupt routine */
   
 }
 
-void beep_for_ms( char ms ){
+#include "math16.h"
+
+#define SPACING_LENGTH 100 // The time (in ms) which it takes 
+#define TIME_CONSTANT 70 // A percentage amount of tempo to actually give the playback (Speed up/slow down)
+
+typedef enum
+{
+	DOT = 50,
+	DASH = 150,
+	_ = 0
+} BeepLength;
+
+void beep_for_time( char ms ){
     TRISC.5 = 0;              /* CCP1 output             */
 	delay(ms);
 	TRISC.5 = 1;              /* CCP1 output             */
 }
 
-void beep_letter( 
-				  BeepLength slot1,
-				  BeepLength slot2,
-				  BeepLength slot3,
-				  BeepLength slot4
-					){
-
+void beep_letter( BeepLength slot1, BeepLength slot2, BeepLength slot3, BeepLength slot4 ){	
 	if (slot1 == _) return;
-	beep_for_ms(slot1);
+	beep_for_time(slot1);
 	delay(SPACING_LENGTH); 
+	
 	if (slot2 == _) return;
-	beep_for_ms(slot2);
+	beep_for_time(slot2);
 	delay(SPACING_LENGTH); 
+	
 	if (slot3 == _) return;
-	beep_for_ms(slot3);
+	beep_for_time(slot3);
 	delay(SPACING_LENGTH); 
+	
 	if (slot4 == _) return;
-	beep_for_ms(slot4);
+	beep_for_time(slot4);
 	delay(SPACING_LENGTH); 
 }
 
-void main( void)
-{ 
-  init_io_ports();
-  init_serial();
-  init_interrupt();
+void main( void) { 
+	init_io_ports();
+	init_serial();
+	init_interrupt();
 
   	TRISC.5 = 1;              /* CCP1 output             */
 	CCP1CON = 0b00.00.1100;   /* PWM-mode                */
 	T2CON   = 0b00000.1.00;   /* prescale 1:1            */
 	PR2     = 255;            /* max value               */
 	CCPR1L = 100; /* change this to your measured value  */  
-
-
-  char choice;
-  while(1)
-   {
-     if( receiver_flag ) /* Character received? */ 
-      {
-        choice = receiver_byte; /* get Character from interrupt routine */
-        receiver_flag = 0;      /* Character now taken - reset the flag */
-
-		//while (reciver_byte != "\n"){
 			
-		//}
+	while(1)
+	{
+		receiver_flag = 0; 
+		receiver_byte = 0;
 		
-		printf("\r\nHear in morse code: ", 0);
+		char text_input[20];
+		int text_length = 0;
+
+		printf("\r\nEnter text for translation:  ", 0);
 		
-		switch (choice){
-			case 'a':	
-				beep_letter(DOT, DASH, _, _);
-				printf("Here is an A \r\n", 0);
-				break;
-			case 'b':	
-				beep_letter(DASH, DOT, DOT, DOT);
-				printf("Here is an B \r\n", 0);
-				break;
-			case 'c':
-				beep_letter(DASH, DOT, DASH, DOT);
-				printf("Here is an C \r\n", 0);
-				break;
-			case 'd':
-				beep_letter(DASH, DOT, DOT, _);
-				printf("Here is an D \r\n", 0);
-				break;
-			default:
-				
-				break;
+		while( receiver_byte != '\n' ) 
+		{	
+			/* Wait for a character to be received from UART */ 
+			while (!receiver_flag);
+			receiver_flag = 0; 
+		
+			text_input[text_length] = receiver_byte;
+			text_length++;
 		}
-      }     
-     /* if no Character is received we always loop here */
-   }
+		
+		if (text_length){
+			printf("\r\nTranslating message:  ", 0);
+			
+			int pos;
+			for (pos = 0; pos < text_length; pos++){
+				printf("\r %c ", text_input[pos]);
+				switch (text_input[pos]){
+					case 'a':	
+						beep_letter(DOT, DASH, _, _);
+						continue;
+					case 'b':	
+						beep_letter(DASH, DOT, DOT, DOT);
+						continue;
+					case 'c':
+						beep_letter(DASH, DOT, DASH, DOT);
+						continue;
+					case 'd':
+						beep_letter(DASH, DOT, DOT, _);
+						continue;
+						
+					case 'o':
+						beep_letter(DASH, DASH, DASH, _);
+						continue;
+					case 's':
+						beep_letter(DOT, DOT, DOT, _);
+						continue;
+
+					default:
+						continue;
+				}
+			}
+			
+			printf("\r\n", 0);
+		}
+	}
 }
 
-
-/* *********************************** */
-/*            FUNCTIONS                */
-/* *********************************** */
-
-
-void delay( char millisec)
-{
+void delay( char millisec) {
+	millisec *= 100 / TIME_CONSTANT;
+	
     OPTION = 2;  /* prescaler divide by 8        */
     do  {  TMR0 = 0;
            while ( TMR0 < 125)   /* 125 * 8 = 1000  */ ;
         } while ( -- millisec > 0);
 }
 
-void init_io_ports( void )
-{
+void init_io_ports( void ) {
   TRISC = 0xF8; /* 11111000 0 is for outputbit  */
   PORTC = 0b000;    /* initial value */
 
@@ -173,8 +175,7 @@ void init_io_ports( void )
   return;
 }
 
-void init_serial( void )  /* initialise PIC16F690 bitbang serialcom */
-{
+void init_serial( void )  /* initialise PIC16F690 bitbang serialcom */ {
    ANSEL.0 = 0; /* No AD on RA0             */
    ANSEL.1 = 0; /* No AD on RA1             */
    PORTA.0 = 1; /* marking line             */
@@ -184,16 +185,14 @@ void init_serial( void )  /* initialise PIC16F690 bitbang serialcom */
    return;      
 }
 
-void init_interrupt( void )
-{
+void init_interrupt( void ) {
   IOCA.1 = 1; /* PORTA.1 interrupt on change */
   RABIE =1;   /* interrupt on change         */
   GIE = 1;    /* interrupt enable            */
   return;
 }
 
-void putchar( char ch )  /* sends one char */
-{
+void putchar( char ch )  /* sends one char */ {
   char bitCount, ti;
   PORTA.0 = 0; /* set startbit */
   for ( bitCount = 10; bitCount > 0 ; bitCount-- )
@@ -208,8 +207,7 @@ void putchar( char ch )  /* sends one char */
   return;
 }
 
-void printf(const char *string, char variable)
-{
+void printf(const char *string, char variable){
   char i, k, m, a, b;
   for(i = 0 ; ; i++)
    {
@@ -255,59 +253,3 @@ void printf(const char *string, char variable)
       else putchar(k);
    }
 }
-
-void putchar_eedata( char data, char adress )
-{
-/* Put char in specific EEPROM-adress */
-      /* Write EEPROM-data sequence                          */
-      EEADR = adress;     /* EEPROM-data adress 0x00 => 0x40 */
-      EEPGD = 0;          /* Data, not Program memory        */  
-      EEDATA = data;      /* data to be written              */
-      WREN = 1;           /* write enable                    */
-      EECON2 = 0x55;      /* first Byte in comandsequence    */
-      EECON2 = 0xAA;      /* second Byte in comandsequence   */
-      WR = 1;             /* write                           */
-      while( EEIF == 0) ; /* wait for done (EEIF=1)          */
-      WR = 0;
-      WREN = 0;           /* write disable - safety first    */
-      EEIF = 0;           /* Reset EEIF bit in software      */
-      /* End of write EEPROM-data sequence                   */
-}
-
-
-char getchar_eedata( char adress )
-{
-/* Get char from specific EEPROM-adress */
-      /* Start of read EEPROM-data sequence                */
-      char temp;
-      EEADR = adress;  /* EEPROM-data adress 0x00 => 0x40  */ 
-      EEPGD = 0;       /* Data not Program -memory         */      
-      RD = 1;          /* Read                             */
-      temp = EEDATA;
-      RD = 0;
-      return temp;     /* data to be read                  */
-      /* End of read EEPROM-data sequence                  */  
-}
-
-
-
-
-/* *********************************** */
-/*            HARDWARE                 */
-/* *********************************** */
-
-/*           _____________  _____________ 
-            |             \/             |
-      +5V---|Vdd        16F690        Vss|---Gnd
-     rpgA->-|RA5            RA0/AN0/(PGD)|bbTx->- PK2 UART-tool
-     rpgB->-|RA4/AN3            RA1/(PGC)|bbRx-<- PK2 UART-tool
-            |RA3/!MCLR/(Vpp)  RA2/AN2/INT|
-            |RC5/CCP                  RC0|->-LED0
-            |RC4                      RC1|->-LED1
-            |RC3/AN7                  RC2|->-LED2
-            |RC6/AN8             AN10/RB4|
-            |RC7/AN9               RB5/Rx|
-            |RB7/Tx                   RB6|-<-Butt
-            |____________________________|                                      
-*/ 
-
