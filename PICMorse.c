@@ -121,23 +121,108 @@ void main( void) {
 				switch (text_input[pos]){
 					case 'a':	
 						beep_letter(DOT, DASH, _, _);
-						continue;
+						break;
+						
 					case 'b':	
 						beep_letter(DASH, DOT, DOT, DOT);
-						continue;
+						break;
+						
 					case 'c':
 						beep_letter(DASH, DOT, DASH, DOT);
-						continue;
+						break;
+						
 					case 'd':
 						beep_letter(DASH, DOT, DOT, _);
-						continue;
+						break;
+						
+					case 'e':
+						beep_letter(DOT,_,_,_);
+						break;
+					
+					case 'f':
+						beep_letter(DOT, DOT, DASH, DOT);
+						break;
+					
+					case 'g':
+						beep_letter(DASH, DASH, DOT, _);
+						break;
+						
+					case 'h':
+						beep_letter(DOT,DOT,DOT,DOT);
+						break;
+						
+					case 'i':
+						beep_letter(DOT, DOT, _, _);
+						break;
+						
+					case 'j':
+						beep_letter(DOT, DASH, DASH, DASH);
+						break;
+						
+					case 'k':
+						beep_letter(DASH, DOT, DASH, _);
+						break;
+						
+					case 'l':
+						beep_letter(DOT,DASH,DOT,DOT);
+						break;
+						
+					case 'm':
+						beep_letter(DASH,DASH, _,_);
+						break;
+						
+					case 'n':
+						beep_letter(DASH, DOT, _, _);
+						break;
 						
 					case 'o':
 						beep_letter(DASH, DASH, DASH, _);
-						continue;
+						break;
+						
+					case 'p':
+						beep_letter(DOT, DASH, DASH, DOT);
+						break;
+						
+					case 'q':
+						beep_letter(DASH, DASH, DOT, DASH);
+						break;
+						
+					case 'r':
+						beep_letter(DOT, DASH, DOT, _);
+						break;
+						
 					case 's':
 						beep_letter(DOT, DOT, DOT, _);
-						continue;
+						break;
+						
+					case 't':
+						beep_letter(DASH, _,_,_);
+						break;
+						
+					case 'u':
+						beep_letter(DOT, DOT, DASH, _);
+						break;
+						
+					case 'v':
+						beep_letter(DOT, DOT, DOT, DASH);
+						break;
+						
+					case 'w':
+						beep_letter(DOT, DASH, DASH, _);
+						break;
+						
+					case 'x':
+						beep_letter(DASH, DOT, DOT, DASH);
+						break;
+						
+					case 'y':
+						beep_letter(DASH, DOT, DASH, DASH);
+						break;
+						
+					case 'z': 
+						beep_letter(DASH, DASH, DOT, DOT);
+						break;
+					
 
 					default:
 						continue;
