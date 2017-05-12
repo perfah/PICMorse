@@ -1,2 +1,2 @@
 # PICMorse
-A pic32 morse code translator that reads input from UART.
+A PIC16 morse code translator that reads input from UART.
